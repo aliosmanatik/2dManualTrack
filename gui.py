@@ -1,12 +1,12 @@
 from tkinter import *
-from tkinter import ttk
 from tkinter import filedialog
-from tkinter import messagebox
+from tkinter import ttk
 
 
 # GLOBALS #############################
 filepath = None
-slider = 4
+slider_val = 4
+size_Val = 0
 file_selected = False
 
 
@@ -26,12 +26,16 @@ def open_file():
 def edit():
     global file_selected
     if file_selected:
-        global slider
-        slider = v.get()
-        write_to_log("Slider value is : " + str(slider))
-        write_to_log("Editing window opened...")
+        global slider_val, size_Val
+        slider_val = val_skip.get()
+        size_Val = c3.current()
+        write_to_log("> Slider value set to : " + str(slider_val))
+        write_to_log("> Window size set to : " + val_size.get())
+        write_to_log("> Editing window opening...")
+
+        window.after(3000, window.destroy)
     else:
-        messagebox.showinfo("Warning", "Please select a video file to edit!")
+        write_to_log("Warning : \n Please select a video file to edit!")
 
 
 def write_to_log(msg):
@@ -47,12 +51,12 @@ def write_to_log(msg):
 
 
 # GUI LAYOUT ##################################################################
-root = Tk()
-root.geometry('392x450')
-root.resizable(width=False, height=False)
-root.title("2D Manual Track [Beta]")
+window = Tk()
+window.geometry('392x450')
+window.resizable(width=False, height=False)
+window.title("2D Manual Track [Beta]")
 
-nb = ttk.Notebook(root)
+nb = ttk.Notebook(window)
 
 tab_menu = ttk.Frame(nb)
 tab_help = ttk.Frame(nb)
@@ -70,19 +74,27 @@ b1.grid(row=0, column=1, sticky=E, padx=20)
 
 l2 = Label(tab_menu, text="2)  Set # frames to skip")
 l2.grid(row=1, column=0, sticky=W, padx=20, pady=20)
-v = IntVar()
-v.set(4)
-s1 = Scale(tab_menu, variable=v, from_=0, to=29, orient=HORIZONTAL, length=180)
-s1.grid(row=1, column=1, sticky=E, padx=20)
+val_skip = IntVar()
+val_skip.set(4)
+s2 = Scale(tab_menu, variable=val_skip, from_=0, to=29, orient=HORIZONTAL, length=180)
+s2.grid(row=1, column=1, sticky=E, padx=20)
 
-l3 = Label(tab_menu, text="3)  Start editing video")
+l3 = Label(tab_menu, text="3)  Set edit window size")
 l3.grid(row=2, column=0, sticky=W, padx=20, pady=20)
-b3 = Button(tab_menu, text='Start editing...', width=25, command=edit)
-b3.grid(row=2, column=1, sticky=E, padx=20)
+val_size = StringVar()
+c3 = ttk.Combobox(tab_menu, textvariable=val_size, width=25, state='readonly')
+c3['values'] = (' %50 - Windowed', ' %100 - Windowed', ' %200 - Windowed', ' Fullscreen')
+c3.current(0)
+c3.grid(row=2, column=1, sticky=E, padx=20)
+
+l4 = Label(tab_menu, text="4)  Start editing video")
+l4.grid(row=3, column=0, sticky=W, padx=20, pady=20)
+b4 = Button(tab_menu, text='Start editing...', width=25, command=edit)
+b4.grid(row=3, column=1, sticky=E, padx=20)
 
 console_frame = LabelFrame(tab_menu, text="Console")
-console_frame.grid(row=3, columnspan=2, padx=20, pady=20)
-log = Text(console_frame, width=40, height=10, state='disabled')
+console_frame.grid(row=4, columnspan=2, padx=20, pady=20)
+log = Text(console_frame, width=40, height=6, state='disabled')
 log.grid(padx=10, pady=10)
 
 # ABOUT TAB ###################################################################
@@ -119,6 +131,4 @@ controls_text['state'] = 'disabled'
 controls_text.grid(padx=10, pady=5)
 
 
-root.mainloop()
-
-
+window.mainloop()
