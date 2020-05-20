@@ -1,16 +1,17 @@
 import sys
 import cv2
-import numpy as np
-# from matplotlib import pyplot as plt
 
 
-# for printing float arrays nicely to console
-np.set_printoptions(formatter={'float_kind': lambda x: "%.4f" % x})
+################################################################################
+# THIS VALUES SHOULD BE SUPPLIED BY GUI IN UNITED CODE !!!
+filepath = 'video.mp4'
+slider_val = 4
+size_Val = 0
+################################################################################
 
 
 # Create a VideoCapture object and read from input file
-# If the input is the camera, pass 0 instead of the video file name
-cap = cv2.VideoCapture('video.mp4')
+cap = cv2.VideoCapture(filepath)
 
 # Check if camera opened successfully
 if not cap.isOpened():
@@ -20,28 +21,18 @@ if not cap.isOpened():
 total_frames = cap.get(7)
 
 
-#######################################################################################################################
-# initialize the list of reference points
-refPt = []
-# initialize the list of reference points lists
-refPtList = []
-# click count
-cc = 0
-# clicks to select
-# cs = input("Enter number of point you want to select: ")
-# frame count
-fc = 0
-# frames to skip
-# fs = input("Enter you want to skip with 'S key: ")
-fs = 4
-# mouse left button status
-lb_down = False
-exit_screen = False
-#######################################################################################################################
+# GLOBALS #############################
+refPt = []                                      # initialize the list of reference points
+refPtList = []                                  # initialize the list of reference points lists
+cc = 0                                          # click count
+fc = 0                                          # frame count
+fs = slider_val                                 # frames to skip
+lb_down = False                                 # mouse left button status
+exit_screen = False                             # 'Q' key enters to exit screen
 
 
 # Resize frame to fit in screen
-def rescale_frame(inFrame, percent=50):
+def rescale_frame(inFrame, percent=100):
     width = int(inFrame.shape[1] * percent / 100)
     height = int(inFrame.shape[0] * percent / 100)
     dim = (width, height)
@@ -61,15 +52,28 @@ def mouse_events(event, x, y, flags, param):
 
     elif not exit_screen and lb_down and event == cv2.EVENT_MOUSEMOVE:
         if 0 < cc < 4:
-            cv2.line(local_frame, refPt[cc - 1], point, (0, 255, 0), 2)
+            cv2.line(local_frame, refPt[cc - 1], point, (0, 0, 0), 6)
+            cv2.line(local_frame, refPt[cc - 1], point, (255, 255, 255), 2)
 
         if cc == 4:
             put_shaded_text(local_frame, "Press 'C' to confirm points", (int(dimX / 2) - 200, int(dimY / 2)), 5, 1.2,
-                            (0, 0, 255), 2, 2)
+                            (0, 127, 255), 2, 2)
             # cv2.circle(local_frame, point, 13, (0, 0, 255), 3)
         else:
             # draw a circle for current point
-            cv2.circle(local_frame, point, 13, (0, 255, 0), 2)
+            if cc == 0:
+                cv2.circle(local_frame, point, 15, (0, 0, 0), 2)
+                cv2.circle(local_frame, point, 13, (0, 0, 255), 2)
+            if cc == 1:
+                cv2.circle(local_frame, point, 15, (0, 0, 0), 2)
+                cv2.circle(local_frame, point, 13, (0, 255, 255), 2)
+            if cc == 2:
+                cv2.circle(local_frame, point, 15, (0, 0, 0), 2)
+                cv2.circle(local_frame, point, 13, (0, 255, 0), 2)
+            if cc == 3:
+                cv2.circle(local_frame, point, 15, (0, 0, 0), 2)
+                cv2.circle(local_frame, point, 13, (255, 0, 0), 2)
+
         # draw a circle for previously selected points
         draw_points(local_frame, refPt)
         cv2.imshow("Frame", local_frame)
@@ -97,8 +101,19 @@ def mouse_events(event, x, y, flags, param):
 
 # draw circles on image at points in given list
 def draw_points(image, point_list):
-    for p in point_list:
-        cv2.circle(image, p, 7, (0, 255, 0), 2)
+    for i, p in enumerate(point_list):
+        if i == 0:
+            cv2.circle(image, p, 15, (0, 0, 0), 2)
+            cv2.circle(image, p, 11, (0, 0, 255), 6)
+        elif i == 1:
+            cv2.circle(image, p, 15, (0, 0, 0), 2)
+            cv2.circle(image, p, 11, (0, 255, 255), 6)
+        elif i == 2:
+            cv2.circle(image, p, 15, (0, 0, 0), 2)
+            cv2.circle(image, p, 11, (0, 255, 0), 6)
+        elif i == 3:
+            cv2.circle(image, p, 15, (0, 0, 0), 2)
+            cv2.circle(image, p, 11, (255, 0, 0), 6)
     return image
 
 
@@ -128,33 +143,42 @@ while cap.isOpened():
     ret, frame = cap.read()
 
     if ret:
-        # Resize frame to fit in screen - %50 default
-        frame = rescale_frame(frame)
+        # Resize frame - %100 default
+        if size_Val == 0:
+            frame = rescale_frame(frame, 50)
+        if size_Val == 2:
+            frame = rescale_frame(frame, 200)
+        else:
+            frame = rescale_frame(frame)
 
         # Get dimensions of image
         dimY, dimX, ch = frame.shape
-        # Print current image dimensions
-        # print(str(dimX) + "*" + str(dimY))
 
         # Print corner numbers
         put_shaded_text(frame, "[1]", (20, 30), 5, 1, (0, 0, 255))
-        put_shaded_text(frame, "[2]", (dimX - 60, 30), 5, 1, (0, 0, 255))
-        put_shaded_text(frame, "[3]", (dimX - 60, dimY - 20), 5, 1, (0, 0, 255))
-        put_shaded_text(frame, "[4]", (20, dimY - 20), 5, 1, (0, 0, 255))
+        put_shaded_text(frame, "[2]", (dimX - 60, 30), 5, 1, (0, 255, 255))
+        put_shaded_text(frame, "[3]", (dimX - 60, dimY - 20), 5, 1, (0, 255, 0))
+        put_shaded_text(frame, "[4]", (20, dimY - 20), 5, 1, (255, 0, 0))
 
         # Show frame number
         fc = fc + 1
 
         if (total_frames - fc) <= fs:
-            put_shaded_text(frame, "[ Frame = " + str(fc) + " / " + str(int(total_frames)) + " ]   *** LAST FRAME OF THE FILE ***", (60, 30), 5,  1, (0, 0, 255))
+            put_shaded_text(frame, "[ Frame = " + str(fc) + " / " + str(int(total_frames)) + " ]   *** LAST FRAME OF THE FILE ***", (60, 30), 5,  1, (0, 127, 255))
         else:
-            put_shaded_text(frame, "[ Frame = " + str(fc) + " / " + str(int(total_frames)) + " ]", (60, 30), 5, 1, (0, 0, 255))
+            put_shaded_text(frame, "[ Frame = " + str(fc) + " / " + str(int(total_frames)) + " ]", (60, 30), 5, 1, (0, 127, 255))
 
         # Clone the current frame
         clone_frame = frame.copy()
 
+        # Open window in selected size
+        if size_Val == 3:
+            cv2.namedWindow("Frame", cv2.WND_PROP_FULLSCREEN)
+            cv2.setWindowProperty("Frame", cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
+        else:
+            cv2.namedWindow("Frame")
+
         # Select point for tracking from frame
-        cv2.namedWindow("Frame")
         cv2.setMouseCallback("Frame", mouse_events)
 
         # keep looping until a key pressed ???
@@ -169,7 +193,7 @@ while cap.isOpened():
                 exit_screen = True
                 while True:
                     frame = clone_frame.copy()
-                    put_shaded_text(frame, "Do you want to quit? (Y/N)", (int(dimX / 2) - 200, int(dimY / 2)), 5,  1.2, (0, 0, 255), 2, 2)
+                    put_shaded_text(frame, "Do you want to quit? (Y/N)", (int(dimX / 2) - 200, int(dimY / 2)), 5,  1.2, (0, 127, 255), 2, 2)
                     cv2.imshow("Frame", frame)
                     key = cv2.waitKey(0) & 0xFF
 
@@ -213,5 +237,6 @@ while cap.isOpened():
 
 # When everything done, release the video capture object
 cap.release()
+
 # Closes all the frames
 cv2.destroyAllWindows()
