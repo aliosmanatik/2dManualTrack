@@ -1,10 +1,13 @@
 from tkinter import *
 from tkinter import filedialog
 from tkinter import ttk
+from pathlib import Path
 
 
 # GLOBALS #############################
-filepath = None
+filepath = Path()
+output_folder = Path()
+output_folder_suffix = "_OUT"
 slider_val = 4
 size_Val = 0
 file_selected = False
@@ -29,13 +32,31 @@ def edit():
         global slider_val, size_Val
         slider_val = val_skip.get()
         size_Val = c3.current()
+
+        create_output_folder()
+
         write_to_log("> Slider value set to : " + str(slider_val))
         write_to_log("> Window size set to : " + val_size.get())
         write_to_log("> Editing window opening...")
 
-        window.after(3000, window.destroy)
+        window.after(5000, window.destroy)
     else:
         write_to_log("Warning : \n Please select a video file to edit!")
+
+
+def create_output_folder():
+    global filepath, output_folder
+    output_folder = Path(filepath).parent
+    name = Path(filepath).name.partition('.')[0].upper()
+    output_folder = output_folder.joinpath(name + output_folder_suffix)
+
+    if output_folder.exists():
+        write_to_log("Output directory already exists:")
+    else:
+        output_folder.mkdir()
+        write_to_log("Output directory created:")
+
+    write_to_log(" " + str(output_folder))
 
 
 def write_to_log(msg):
