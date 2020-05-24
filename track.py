@@ -4,9 +4,13 @@ import cv2
 
 ################################################################################
 # THIS VALUES SHOULD BE SUPPLIED BY GUI IN UNITED CODE !!!
+from pathlib import Path
+output_folder = Path('VIDEO_OUT')
+output_folder.mkdir(exist_ok=True)
+print(output_folder.resolve())
 filepath = 'video.mp4'
-slider_val = 4
-size_Val = 0
+slider_val = 4                  # Skip next 4 frames and edit 5th frame
+size_Val = 0                    # 0 = %50 | 1 = %100 | 2 = %200 | 3 = fullscreen
 ################################################################################
 
 
@@ -42,9 +46,9 @@ def rescale_frame(inFrame, percent=100):
 # Capture mouse events
 def mouse_events(event, x, y, flags, param):
     # grab references to the global variables
-    global lb_down, cc, refPt, clone_frame
+    global lb_down, cc, refPt, overlaid_frame
     point = (x, y)
-    local_frame = clone_frame.copy()
+    local_frame = overlaid_frame.copy()
 
     # if the left mouse button was clicked, record (x, y) coordinates
     if event == cv2.EVENT_LBUTTONDOWN:
@@ -151,25 +155,27 @@ while cap.isOpened():
         else:
             frame = rescale_frame(frame)
 
+        # Backup original frame for output !!!
+        original_frame = frame.copy()
+
         # Get dimensions of image
         dimY, dimX, ch = frame.shape
 
-        # Print corner numbers
+        # Corner numbers overlay
         put_shaded_text(frame, "[1]", (20, 30), 5, 1, (0, 0, 255))
         put_shaded_text(frame, "[2]", (dimX - 60, 30), 5, 1, (0, 255, 255))
         put_shaded_text(frame, "[3]", (dimX - 60, dimY - 20), 5, 1, (0, 255, 0))
         put_shaded_text(frame, "[4]", (20, dimY - 20), 5, 1, (255, 0, 0))
 
-        # Show frame number
+        # Frame count overlay
         fc = fc + 1
-
         if (total_frames - fc) <= fs:
             put_shaded_text(frame, "[ Frame = " + str(fc) + " / " + str(int(total_frames)) + " ]   *** LAST FRAME OF THE FILE ***", (60, 30), 5,  1, (0, 127, 255))
         else:
             put_shaded_text(frame, "[ Frame = " + str(fc) + " / " + str(int(total_frames)) + " ]", (60, 30), 5, 1, (0, 127, 255))
 
-        # Clone the current frame
-        clone_frame = frame.copy()
+        # Clone the current frame for resetting !!!
+        overlaid_frame = frame.copy()
 
         # Open window in selected size
         if size_Val == 3:
@@ -192,7 +198,7 @@ while cap.isOpened():
             if key == ord('q'):
                 exit_screen = True
                 while True:
-                    frame = clone_frame.copy()
+                    frame = overlaid_frame.copy()
                     put_shaded_text(frame, "Do you want to quit? (Y/N)", (int(dimX / 2) - 200, int(dimY / 2)), 5,  1.2, (0, 127, 255), 2, 2)
                     cv2.imshow("Frame", frame)
                     key = cv2.waitKey(0) & 0xFF
@@ -202,7 +208,7 @@ while cap.isOpened():
                         sys.exit()
                     if key == ord('n'):
                         exit_screen = False
-                        frame = clone_frame.copy()
+                        frame = overlaid_frame.copy()
                         break
 
             # Press 'S' key to Skip next frame
@@ -213,7 +219,7 @@ while cap.isOpened():
 
             # Press 'R' key to Reset points
             if key == ord("r"):
-                frame = clone_frame.copy()
+                frame = overlaid_frame.copy()
                 refPt = []
                 cc = 0
                 print("\nR > Point selection reset\n")
