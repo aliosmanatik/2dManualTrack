@@ -7,10 +7,11 @@ from pathlib import Path
 # GLOBALS #############################
 filepath = Path()
 output_folder = Path()
-output_folder_suffix = "_OUT"
-slider_val = 4
-size_Val = 0
+output_folder_suffix = "_OUT"           # create an output folder from file name and add this suffix
+slider_val = 4                          # Skip next 4 frames and edit 5th frame
+size_Val = 0                            # 0 = %50 | 1 = %100 | 2 = %200 | 3 = fullscreen
 file_selected = False
+delay = 3000                            # milliseconds before gui closes
 
 
 # FUNCTIONS ###########################
@@ -39,7 +40,7 @@ def edit():
         write_to_log("> Window size set to : " + val_size.get())
         write_to_log("> Editing window opening...")
 
-        window.after(5000, window.destroy)
+        window.after(delay, window.destroy)
     else:
         write_to_log("Warning : \n Please select a video file to edit!")
 
