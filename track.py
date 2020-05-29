@@ -11,13 +11,16 @@ output_folder.mkdir(exist_ok=True)
 print(output_folder.resolve())
 
 filepath = 'video.mp4'
-slider_val = 4                  # Skip next 4 frames and edit 5th frame
+slider_val = 4                  # skip next 4 frames and edit 5th frame
 size_Val = 3                    # 0 = %50 | 1 = %100 | 2 = %200 | 3 = fullscreen
 ################################################################################
 
 
 # INFO BACKGROUND #####################
 info_area = [(0, 0), (180, 0), (180, 300), (0, 300)]
+
+# LINE TYPE OF LINE/CIRCLE/TEXT #######
+lineType = 16                                    # default 8, anti-aliased 16
 
 # COLORS ##############################
 color_1 = (31, 31, 255)                         # corner 1 and line 1
@@ -36,7 +39,7 @@ color_info = (223, 223, 223)                    # text color of output info
 
 # GLOBALS #############################
 refPts = []                                     # initialize the list of reference points
-prevPts = [(0, 0), (0, 0), (0, 0), (0, 0), 0]   # initialize the list of previous points
+prevPts = [(0, 0), (1, 0), (1, 1), (0, 1), 0]   # initialize the list of previous points : 1px square
 cc = 0                                          # click count
 fc = 0                                          # frame count
 fs = slider_val                                 # frames to skip
@@ -66,22 +69,22 @@ def mouse_events(event, x, y, flags, param):
 
     elif not exit_screen and lb_down and event == cv2.EVENT_MOUSEMOVE:
         if 0 < cc < 4:
-            cv2.line(local_frame, refPts[cc - 1], point, color_dark, 6)
-            cv2.line(local_frame, refPts[cc - 1], point, color_light, 2)
+            cv2.line(local_frame, refPts[cc - 1], point, color_dark, 6, lineType)
+            cv2.line(local_frame, refPts[cc - 1], point, color_light, 2, lineType)
 
         # draw a circle for current point
         if cc == 0:
-            cv2.circle(local_frame, point, 15, color_dark, 2)
-            cv2.circle(local_frame, point, 13, color_1, 2)
+            cv2.circle(local_frame, point, 15, color_dark, 2, lineType)
+            cv2.circle(local_frame, point, 13, color_1, 2, lineType)
         if cc == 1:
-            cv2.circle(local_frame, point, 15, color_dark, 2)
-            cv2.circle(local_frame, point, 13, color_2, 2)
+            cv2.circle(local_frame, point, 15, color_dark, 2, lineType)
+            cv2.circle(local_frame, point, 13, color_2, 2, lineType)
         if cc == 2:
-            cv2.circle(local_frame, point, 15, color_dark, 2)
-            cv2.circle(local_frame, point, 13, color_3, 2)
+            cv2.circle(local_frame, point, 15, color_dark, 2, lineType)
+            cv2.circle(local_frame, point, 13, color_3, 2, lineType)
         if cc == 3:
-            cv2.circle(local_frame, point, 15, color_dark, 2)
-            cv2.circle(local_frame, point, 13, color_4, 2)
+            cv2.circle(local_frame, point, 15, color_dark, 2, lineType)
+            cv2.circle(local_frame, point, 13, color_4, 2, lineType)
 
         # draw a circle for previously selected points
         draw_points(local_frame, refPts)
@@ -116,17 +119,17 @@ def mouse_events(event, x, y, flags, param):
 def draw_points(image, point_list):
     for i, p in enumerate(point_list):
         if i == 0:
-            cv2.circle(image, p, 15, color_dark, 2)
-            cv2.circle(image, p, 11, color_1, 6)
+            cv2.circle(image, p, 15, color_dark, 2, lineType)
+            cv2.circle(image, p, 11, color_1, 6, lineType)
         elif i == 1:
-            cv2.circle(image, p, 15, color_dark, 2)
-            cv2.circle(image, p, 11, color_2, 6)
+            cv2.circle(image, p, 15, color_dark, 2, lineType)
+            cv2.circle(image, p, 11, color_2, 6, lineType)
         elif i == 2:
-            cv2.circle(image, p, 15, color_dark, 2)
-            cv2.circle(image, p, 11, color_3, 6)
+            cv2.circle(image, p, 15, color_dark, 2, lineType)
+            cv2.circle(image, p, 11, color_3, 6, lineType)
         elif i == 3:
-            cv2.circle(image, p, 15, color_dark, 2)
-            cv2.circle(image, p, 11, color_4, 6)
+            cv2.circle(image, p, 15, color_dark, 2, lineType)
+            cv2.circle(image, p, 11, color_4, 6, lineType)
     return image
 
 
@@ -144,8 +147,8 @@ def skip_frames(sf):
 
 # Overlay a shaded text on image
 def put_shaded_text(image, text, position, font, scale, color, thickness=1, border=1):
-    cv2.putText(image, text, position, font, scale, (7, 7, 7), thickness+(2*border))
-    cv2.putText(image, text, position, font, scale, color, thickness)
+    cv2.putText(image, text, position, font, scale, (7, 7, 7), thickness + (2 * border), lineType)
+    cv2.putText(image, text, position, font, scale, color, thickness, lineType)
     pass
 
 
@@ -157,15 +160,19 @@ def distance(p, q):
 
 # calculate the change ratio of current distance over previous distance by %
 def variance(dp, dc):
-    if dp == 0:
+    # assuming there will be no tracking points with 1px distance;
+    # I used 1px square for initial previous points,
+    # so for the first frame I return "current distance" = length.
+    if dp == 1:
         return round(dc, 2)
     else:
-        return round((dc-dp)*100/dp, 2)
+        return round((dc - dp) * 100 / dp, 2)
 
 
 # calculate rotation of current line against previous line > positive = clockwise
 def rotation(lp, lc):
-    return round(degrees(atan2(lc[1][1] - lc[0][1], lc[1][0] - lc[0][0])) - degrees(atan2(lp[1][1] - lp[0][1], lp[1][0] - lp[0][0])), 2)
+    return round(degrees(atan2(lc[1][1] - lc[0][1], lc[1][0] - lc[0][0])) -
+                 degrees(atan2(lp[1][1] - lp[0][1], lp[1][0] - lp[0][0])), 2)
 
 
 # overlay info and paint rectangle on output image and save to output folder
@@ -187,19 +194,19 @@ def save_output(points):
     pp3 = prevPts[2]
     pp4 = prevPts[3]
 
-    # set the lines
+    # set the lines for image coordinate system
     l1 = [p1, p2]
     l2 = [p2, p3]
-    l3 = [p3, p4]
-    l4 = [p4, p1]
+    l3 = [p4, p3]
+    l4 = [p1, p4]
 
     l13 = [p1, p3]
-    l24 = [p2, p4]
+    l24 = [p4, p2]
 
     pl1 = [pp1, pp2]
     pl2 = [pp2, pp3]
-    pl3 = [pp3, pp4]
-    pl4 = [pp4, pp1]
+    pl3 = [pp4, pp3]
+    pl4 = [pp1, pp4]
 
     pl13 = [pp1, pp3]
     pl24 = [pp2, pp4]
@@ -208,21 +215,21 @@ def save_output(points):
     cv2.fillPoly(original_frame, array([points[0:4]]), color_rectangle)
 
     # draw lines on sides
-    cv2.line(original_frame, p1, p2, color_1, 1)
-    cv2.line(original_frame, p2, p3, color_2, 1)
-    cv2.line(original_frame, p3, p4, color_3, 1)
-    cv2.line(original_frame, p4, p1, color_4, 1)
+    cv2.line(original_frame, p1, p2, color_1, 1, lineType)
+    cv2.line(original_frame, p2, p3, color_2, 1, lineType)
+    cv2.line(original_frame, p3, p4, color_3, 1, lineType)
+    cv2.line(original_frame, p4, p1, color_4, 1, lineType)
 
     # pin corner points
-    cv2.circle(original_frame, p1, 1, color_1, 2)
-    cv2.circle(original_frame, p2, 1, color_2, 2)
-    cv2.circle(original_frame, p3, 1, color_3, 2)
-    cv2.circle(original_frame, p4, 1, color_4, 2)
+    cv2.circle(original_frame, p1, 1, color_1, 2, lineType)
+    cv2.circle(original_frame, p2, 1, color_2, 2, lineType)
+    cv2.circle(original_frame, p3, 1, color_3, 2, lineType)
+    cv2.circle(original_frame, p4, 1, color_4, 2, lineType)
 
     # fill info background
     cv2.fillPoly(original_frame, array([info_area]), color_info_bg)
 
-    # calculate output info
+    # calculate distances
     d12 = distance(p1, p2)
     d23 = distance(p2, p3)
     d34 = distance(p3, p4)
@@ -239,6 +246,7 @@ def save_output(points):
     pd13 = distance(pp1, pp3)
     pd24 = distance(pp2, pp4)
 
+    # printing output info
     cv2.putText(original_frame, "Frame # :  " + str(frame_no), (10, 20), 5, 0.8, color_info)
     cv2.putText(original_frame, "Previous :  " + str(prev_frame_no), (10, 40), 5, 0.8, color_info)
 
@@ -247,17 +255,30 @@ def save_output(points):
     cv2.putText(original_frame, "V3  : % " + str(variance(pd34, d34)), (10, 110), 5, 0.8, color_3)
     cv2.putText(original_frame, "V4  : % " + str(variance(pd41, d41)), (10, 130), 5, 0.8, color_4)
 
-    axv = round((variance(pd13, d13) + variance(pd24, d24))/2, 2)
+    axv = round((variance(pd13, d13) + variance(pd24, d24)) / 2, 2)
+    # for first frame avx = average cross distance
+    if pd12 == pd23 == pd34 == pd41 == 1:
+        axv = round((d13 + d24) / 2, 2)
+
     cv2.putText(original_frame, "AXV : % " + str(axv), (10, 160), 5, 0.8, color_light)
+
+    if axv < 0:
+        cv2.arrowedLine(original_frame, (168, 147), (168, 163), color_info, 1, tipLength=0.25)
+    else:
+        cv2.arrowedLine(original_frame, (168, 163), (168, 147), color_info, 1, tipLength=0.25)
 
     cv2.putText(original_frame, "R1  :  " + str(rotation(pl1, l1)), (10, 190), 5, 0.8, color_1)
     cv2.putText(original_frame, "R2  :  " + str(rotation(pl2, l2)), (10, 210), 5, 0.8, color_2)
     cv2.putText(original_frame, "R3  :  " + str(rotation(pl3, l3)), (10, 230), 5, 0.8, color_3)
     cv2.putText(original_frame, "R4  :  " + str(rotation(pl4, l4)), (10, 250), 5, 0.8, color_4)
 
-    axr = round((rotation(pl13, l13) + rotation(pl24, l24))/2, 2)
+    axr = round((rotation(pl13, l13) + rotation(pl24, l24)) / 2, 2)
     cv2.putText(original_frame, "AXR :  " + str(axr), (10, 280), 5, 0.8, color_light)
-    
+    if axr < 0:
+        cv2.arrowedLine(original_frame, (168, 283), (168, 267), color_info, 1, tipLength=0.25)
+    else:
+        cv2.arrowedLine(original_frame, (168, 267), (168, 283), color_info, 1, tipLength=0.25)
+
     cv2.imwrite(str(output_folder.resolve().joinpath(Path('frame_' + str(frame_no) + '.jpg'))), original_frame)
 
 
