@@ -77,6 +77,7 @@ window = Tk()
 window.geometry('392x450')
 window.resizable(width=False, height=False)
 window.title("2D Manual Track [Beta]")
+window.wm_iconbitmap('circle.ico')
 
 nb = ttk.Notebook(window)
 
