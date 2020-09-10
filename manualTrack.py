@@ -1,6 +1,5 @@
 from tkinter import *
-from tkinter import filedialog
-from tkinter import ttk
+from tkinter import filedialog, ttk
 from pathlib import Path
 
 
@@ -11,13 +10,15 @@ from math import atan2, degrees
 
 
 # GLOBALS #############################
+app_title = "2D Manual Track [Beta]"
+icon_file = Path("circle.ico")
 filepath = Path()
 output_folder = Path()
 output_folder_suffix = "_OUT"           # create an output folder from file name and add this suffix
 slider_val = 4                          # initializing by default value : skip next 4 frames and edit 5th frame
 size_Val = 0                            # initializing by default value : 0 = %50 | 1 = %100 | 2 = %200 | 3 = fullscreen
 file_selected = False
-delay = 1000                            # milliseconds before gui closes
+delay = 2000                            # milliseconds before gui closes
 
 
 #######################################################################################################################
@@ -30,7 +31,7 @@ delay = 1000                            # milliseconds before gui closes
 # FUNCTIONS ###########################
 def open_file():
     global filepath, file_selected
-    filepath = filedialog.askopenfilename(initialdir=Path("."), title="Select file",
+    filepath = filedialog.askopenfilename(initialdir=Path().cwd(), title="Select file",
                                           filetypes=(("video files", ".mp4 .avi .mov .flv .wmv .mpeg"), ("all files", ".*")))
     if filepath:
         file_selected = True
@@ -85,12 +86,18 @@ def write_to_log(msg):
     log.yview_pickplace("end")
 
 
+def window_closed():
+    window.destroy()
+    sys.exit(0)
+
+
 # GUI LAYOUT ##################################################################
 window = Tk()
 window.geometry('392x450')
 window.resizable(width=False, height=False)
-window.title("2D Manual Track [Beta]")
-window.wm_iconbitmap('circle.ico')
+window.title(app_title)
+window.wm_iconbitmap(icon_file)
+window.protocol("WM_DELETE_WINDOW", window_closed)
 
 nb = ttk.Notebook(window)
 
@@ -254,27 +261,27 @@ def mouse_events(event, x, y, flags, param):
             put_shaded_text(local_frame, "Press 'C' to confirm points", (int(dimX / 2) - 200, int(dimY / 2)), 5, 1.2,
                             color_confirm, 2, 2)
 
-        cv2.imshow("Frame", local_frame)
+        cv2.imshow(app_title, local_frame)
 
     elif not exit_screen and cc < 4 and event == cv2.EVENT_LBUTTONUP:
         lb_down = False
         # increment counter and append the point
         cc = cc + 1
-        print("Point " + str(cc) + " appended to 'refPts' list")
+        print("\nPoint " + str(cc) + " added to list")
         refPts.append(point)
         print(refPts)
         # draw a circle for previously selected points
         draw_points(local_frame, refPts)
-        cv2.imshow("Frame", local_frame)
+        cv2.imshow(app_title, local_frame)
 
-    elif not exit_screen and cc > 0 and event == cv2.EVENT_RBUTTONDOWN:
+    elif not exit_screen and cc > 0 and event == cv2.EVENT_RBUTTONDOWN:        
+        print("\nPoint " + str(cc) + " removed from list")
         cc = cc - 1
-        print(str(cc))
         refPts.pop(cc)
         print(refPts)
         # draw a circle for previously selected points
         draw_points(local_frame, refPts)
-        cv2.imshow("Frame", local_frame)
+        cv2.imshow(app_title, local_frame)
 
 
 # draw circles on image at points in given list
@@ -298,6 +305,7 @@ def draw_points(image, point_list):
 # Skip some frames
 def skip_frames(sf):
     global fc, refPts, cc
+    print("\nSkipping frames...\n")
     for i in range(sf):
         cap.read()
         fc = fc + 1
@@ -451,7 +459,10 @@ cap = cv2.VideoCapture(filepath)
 
 # Check if camera opened successfully
 if not cap.isOpened():
-    print("Error opening video stream or file")
+    print("\nError opening video file")
+    exit(-1)
+
+print("\nVideo opened, reading file...")
 
 # frame_rate = cap.get(5)
 total_frames = cap.get(7)
@@ -489,27 +500,26 @@ while cap.isOpened():
             put_shaded_text(frame, "[ Frame = " + str(fc) + " / " + str(
                 int(total_frames)) + " ]   *** LAST FRAME OF THE FILE ***", (60, 30), 5, 1, color_last)
         else:
-            put_shaded_text(frame, "[ Frame = " + str(fc) + " / " + str(int(total_frames)) + " ]", (60, 30), 5, 1,
-                            color_count)
+            put_shaded_text(frame, "[ Frame = " + str(fc) + " / " + str(int(total_frames)) + " ]", (60, 30), 5, 1, color_count)
 
         # Clone the current frame for resetting !!!
         overlaid_frame = frame.copy()
 
         # Open window in selected size
         if size_Val == 3:
-            cv2.namedWindow("Frame", cv2.WND_PROP_FULLSCREEN)
-            cv2.setWindowProperty("Frame", cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
+            cv2.namedWindow(app_title, cv2.WND_PROP_FULLSCREEN)
+            cv2.setWindowProperty(app_title, cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
         else:
-            cv2.namedWindow("Frame")
+            cv2.namedWindow(app_title)
 
         # Select point for tracking from frame
-        cv2.setMouseCallback("Frame", mouse_events)
+        cv2.setMouseCallback(app_title, mouse_events)
 
         # keep looping until a key pressed ???
         while True:
             draw_points(frame, refPts)
             # display the image and wait for click
-            cv2.imshow("Frame", frame)
+            cv2.imshow(app_title, frame)
             key = cv2.waitKey(0) & 0xFF
 
             # Press 'Q' key to Exit
@@ -517,23 +527,24 @@ while cap.isOpened():
                 exit_screen = True
                 while True:
                     frame = overlaid_frame.copy()
-                    put_shaded_text(frame, "Do you want to quit? (Y/N)", (int(dimX / 2) - 200, int(dimY / 2)), 5, 1.2,
-                                    color_quit, 2, 2)
-                    cv2.imshow("Frame", frame)
+                    put_shaded_text(frame, "Do you want to quit? (Y/N)", (int(dimX / 2) - 200, int(dimY / 2)), 5, 1.2, color_quit, 2, 2)
+                    print("\nQ > Do you want to quit? (Y/N)")
+                    cv2.imshow(app_title, frame)
                     key = cv2.waitKey(0) & 0xFF
 
                     if key == ord('y'):
-                        print("\nQ > Exiting program")
+                        print("Y > Exiting program...")
                         sys.exit()
                     if key == ord('n'):
+                        print("N > Continuing program...")
                         exit_screen = False
                         frame = overlaid_frame.copy()
                         break
 
             # Press 'S' key to Skip next frame
             if key == ord('s'):
+                print("\nS >  " + str(fs) + " frames will be skipped")
                 skip_frames(fs)
-                print("\nS > " + str(fs) + " frames skipped and point selection reset\n")
                 break
 
             # Press 'R' key to Reset points
@@ -541,11 +552,11 @@ while cap.isOpened():
                 frame = overlaid_frame.copy()
                 refPts = []
                 cc = 0
-                print("\nR > Point selection reset\n")
+                print("\nR > Reset selected points")
 
-            # Press 'C' key to Reset points
+            # Press 'C' key to Confirm points
             if cc == 4 and key == ord("c"):
-                print("\nC > Selected points confirmed\n")
+                print("\nC > Confirmed selected points")
                 # refPts need to be stored before calling skip_frames()
                 refPts.append(fc)
 
@@ -559,10 +570,11 @@ while cap.isOpened():
                 break
 
         # Display the resulting frame
-        cv2.imshow('Frame', frame)
+        cv2.imshow(app_title, frame)
 
-    # Break the loop
+    # Break the loop if not 'ret'
     else:
+        print("Error reading video file")
         break
 
 # When everything done, release the video capture object
